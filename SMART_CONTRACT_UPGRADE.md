@@ -1,10 +1,18 @@
 # 🎮 Smart Contract Upgrade - Suppression de la création de profil
 
+## ✅ STATUT: DÉPLOYÉ ET ACTIF
+
+**Nouveau Contrat v2.0.0:**
+- **Adresse:** `0xc4f5f0201bf609535ec7a6d88a05b05013ae0c49`
+- **Réseau:** Celo Mainnet
+- **Statut:** ✅ Vérifié et Déployé
+- **Celoscan:** https://celoscan.io/address/0xc4f5f0201bf609535ec7a6d88a05b05013ae0c49
+
 ## 📋 Résumé du problème
 
 **Problème:** L'erreur "Please create a profile first (coming soon)" apparaissait lors de la tentative de jeu On-chain car l'ancien smart contract exigeait la création d'un profil avant de pouvoir jouer.
 
-**Solution:** Nouveau smart contract qui crée automatiquement le profil lors de la première partie.
+**Solution:** Nouveau smart contract qui crée automatiquement le profil lors de la première partie. ✅ **DÉPLOYÉ**
 
 ## ✨ Changements Majeurs
 

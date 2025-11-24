@@ -1,6 +1,7 @@
 // OLD CONTRACT (requires profile creation): 0xDeDb830D70cE3f687cad36847Ef5b9b96823A9b0
-// NEW CONTRACT: Deploy contracts/RockPaperScissors.sol and update this address
-export const CONTRACT_ADDRESS = '0xDeDb830D70cE3f687cad36847Ef5b9b96823A9b0' as `0x${string}`;
+// NEW CONTRACT v2.0.0 (auto profile creation): 0xc4f5f0201bf609535ec7a6d88a05b05013ae0c49
+// Verified and deployed on Celo mainnet
+export const CONTRACT_ADDRESS = '0xc4f5f0201bf609535ec7a6d88a05b05013ae0c49' as `0x${string}`;
 
 export const CONTRACT_ABI = [
   {
