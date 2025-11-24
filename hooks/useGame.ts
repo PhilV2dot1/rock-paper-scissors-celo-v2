@@ -65,7 +65,8 @@ export function useGame() {
   // Update stats from on-chain data
   useEffect(() => {
     if (mode === "onchain" && onchainStats && playerExists) {
-      const statsArray = onchainStats as any[];
+      // Convert readonly tuple to array for easier access
+      const statsArray = Array.from(onchainStats);
       setStats({
         wins: Number(statsArray[1] || 0),
         losses: Number(statsArray[2] || 0),
