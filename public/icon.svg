@@ -1,5 +1,53 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="128" fill="#1A1A1A"/>
-  <rect x="24" y="24" width="464" height="464" rx="104" fill="#FCFF52"/>
-  <text x="256" y="320" font-size="240" text-anchor="middle" font-family="Arial, sans-serif">🎮</text>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f3f4f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f9fafb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FCFF52;stop-opacity:0.2" />
+    </linearGradient>
+
+    <linearGradient id="iconCardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.95" />
+      <stop offset="100%" style="stop-color:#f9fafb;stop-opacity:0.95" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="url(#iconBg)"/>
+
+  <!-- Main game area -->
+  <g transform="translate(256, 220)">
+    <!-- Yellow border -->
+    <rect x="-120" y="-120" width="240" height="240" rx="28" fill="none" stroke="#FCFF52" stroke-width="10"/>
+
+    <!-- Card background -->
+    <rect x="-115" y="-115" width="230" height="230" rx="24" fill="url(#iconCardBg)" stroke="#374151" stroke-width="3"/>
+
+    <!-- Three choices in a row -->
+    <g transform="translate(0, -20)">
+      <!-- Rock -->
+      <text x="-75" y="25" font-size="65" text-anchor="middle">🪨</text>
+
+      <!-- Paper -->
+      <text x="0" y="25" font-size="65" text-anchor="middle">📄</text>
+
+      <!-- Scissors -->
+      <text x="75" y="25" font-size="65" text-anchor="middle">✂️</text>
+    </g>
+
+    <!-- VS symbol -->
+    <g transform="translate(0, -85)">
+      <text x="0" y="0" font-size="32" fill="#1f2937" font-family="system-ui, -apple-system, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="2">VS</text>
+    </g>
+
+    <!-- Winner sparkle -->
+    <g transform="translate(0, 80)">
+      <line x1="0" y1="-6" x2="0" y2="6" stroke="#FCFF52" stroke-width="4" stroke-linecap="round"/>
+      <line x1="-6" y1="0" x2="6" y2="0" stroke="#FCFF52" stroke-width="4" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="256" y="410" font-size="32" fill="#1f2937" font-family="system-ui, -apple-system, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="-1">Rock Paper Scissors</text>
 </svg>
