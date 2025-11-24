@@ -25,24 +25,19 @@
     <rect x="-115" y="-115" width="230" height="230" rx="24" fill="url(#iconCardBg)" stroke="#374151" stroke-width="3"/>
 
     <!-- Three choices in a row -->
-    <g transform="translate(0, -20)">
+    <g transform="translate(0, 0)">
       <!-- Rock -->
-      <text x="-75" y="25" font-size="65" text-anchor="middle">🪨</text>
+      <text x="-75" y="10" font-size="70" text-anchor="middle">🪨</text>
 
       <!-- Paper -->
-      <text x="0" y="25" font-size="65" text-anchor="middle">📄</text>
+      <text x="0" y="10" font-size="70" text-anchor="middle">📄</text>
 
       <!-- Scissors -->
-      <text x="75" y="25" font-size="65" text-anchor="middle">✂️</text>
-    </g>
-
-    <!-- VS symbol -->
-    <g transform="translate(0, -85)">
-      <text x="0" y="0" font-size="32" fill="#1f2937" font-family="system-ui, -apple-system, sans-serif" font-weight="900" text-anchor="middle" letter-spacing="2">VS</text>
+      <text x="75" y="10" font-size="70" text-anchor="middle">✂️</text>
     </g>
 
     <!-- Winner sparkle -->
-    <g transform="translate(0, 80)">
+    <g transform="translate(0, 90)">
       <line x1="0" y1="-6" x2="0" y2="6" stroke="#FCFF52" stroke-width="4" stroke-linecap="round"/>
       <line x1="-6" y1="0" x2="6" y2="0" stroke="#FCFF52" stroke-width="4" stroke-linecap="round"/>
     </g>
