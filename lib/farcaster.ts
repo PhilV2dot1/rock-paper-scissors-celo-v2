@@ -1,8 +1,27 @@
 import sdk from "@farcaster/miniapp-sdk";
 
-export async function initializeFarcaster() {
+// Check if running in Farcaster context
+export function isFarcasterContext(): boolean {
+  if (typeof window === "undefined") return false;
+
+  // Check for Farcaster SDK availability
+  return (
+    (window as any).fc !== undefined ||
+    (window as any).farcaster !== undefined ||
+    document.referrer.includes("warpcast.com")
+  );
+}
+
+export async function initializeFarcaster(): Promise<boolean> {
   try {
+    // Only initialize if in Farcaster context
+    if (!isFarcasterContext()) {
+      console.log("Not in Farcaster context, skipping SDK initialization");
+      return false;
+    }
+
     await sdk.actions.ready();
+    console.log("Farcaster SDK initialized successfully");
     return true;
   } catch (error) {
     console.error("Failed to initialize Farcaster SDK:", error);
@@ -18,6 +37,8 @@ export interface FarcasterUser {
 }
 
 export async function getFarcasterUser(): Promise<FarcasterUser | null> {
+  if (!isFarcasterContext()) return null;
+
   try {
     const context = await sdk.context;
     if (!context || !context.user) return null;
@@ -41,14 +62,22 @@ export interface GameStats {
 }
 
 export async function shareOnFarcaster(text: string, embeds?: string[]) {
-  const embedsParam = embeds?.map(e => `embeds[]=${encodeURIComponent(e)}`).join('&') || '';
-  const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}${embedsParam ? '&' + embedsParam : ''}`;
+  const embedsParam =
+    embeds?.map((e) => `embeds[]=${encodeURIComponent(e)}`).join("&") || "";
+  const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}${embedsParam ? "&" + embedsParam : ""}`;
+
+  if (!isFarcasterContext()) {
+    // Outside Farcaster, open in new window
+    window.open(shareUrl, "_blank");
+    return;
+  }
 
   try {
     await sdk.actions.openUrl(shareUrl);
   } catch (error) {
+    console.error("Failed to open Farcaster share URL:", error);
     // Fallback: open in new window
-    window.open(shareUrl, '_blank');
+    window.open(shareUrl, "_blank");
   }
 }
 

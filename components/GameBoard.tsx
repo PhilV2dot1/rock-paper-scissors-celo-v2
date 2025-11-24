@@ -15,28 +15,39 @@ const CHOICES = [
 ];
 
 export function GameBoard({ onChoice, disabled }: GameBoardProps) {
+  // Check for reduced motion preference
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-center text-gray-900">
+    <div className="space-y-4 sm:space-y-5">
+      <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-900">
         Choose Your Move
       </h2>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {CHOICES.map((choice) => (
           <motion.button
             key={choice.index}
             onClick={() => onChoice(choice.index)}
             disabled={disabled}
-            whileHover={!disabled ? { scale: 1.05 } : {}}
-            whileTap={!disabled ? { scale: 0.95 } : {}}
-            className="flex flex-col items-center justify-center gap-2 p-6 bg-white/80 backdrop-blur-lg rounded-2xl border-2 border-gray-700 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            whileTap={!disabled && !prefersReducedMotion ? { scale: 0.95 } : {}}
+            className="flex flex-col items-center justify-center gap-1 sm:gap-2 p-4 sm:p-6 min-h-[100px] sm:min-h-[120px] bg-white/80 backdrop-blur-lg rounded-2xl border-2 border-gray-700 shadow-lg active:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:bg-white/90"
             style={{
               boxShadow: !disabled
                 ? "0 0 0 3px #FCFF52, 0 10px 25px -5px rgba(0, 0, 0, 0.1)"
                 : "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
             }}
+            aria-label={`Choose ${choice.name}`}
           >
-            <span className="text-5xl">{choice.emoji}</span>
-            <span className="text-sm font-bold text-gray-900">
+            <span
+              className="text-4xl sm:text-5xl"
+              role="img"
+              aria-label={choice.name}
+            >
+              {choice.emoji}
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-gray-900">
               {choice.name}
             </span>
           </motion.button>
