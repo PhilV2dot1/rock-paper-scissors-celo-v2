@@ -1,0 +1,17 @@
+{
+  "name": "rock-paper-scissors-contracts",
+  "version": "2.0.0",
+  "description": "Smart contracts for Rock Paper Scissors on Celo",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:alfajores": "hardhat run scripts/deploy.js --network alfajores",
+    "deploy:celo": "hardhat run scripts/deploy.js --network celo",
+    "verify": "hardhat verify --network"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.3.1"
+  }
+}

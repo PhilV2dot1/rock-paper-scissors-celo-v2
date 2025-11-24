@@ -1,3 +1,5 @@
+// OLD CONTRACT (requires profile creation): 0xDeDb830D70cE3f687cad36847Ef5b9b96823A9b0
+// NEW CONTRACT: Deploy contracts/RockPaperScissors.sol and update this address
 export const CONTRACT_ADDRESS = '0xDeDb830D70cE3f687cad36847Ef5b9b96823A9b0' as `0x${string}`;
 
 export const CONTRACT_ABI = [
@@ -9,17 +11,9 @@ export const CONTRACT_ABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'string', name: '_nom', type: 'string' }],
-    name: 'creerProfil',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
     inputs: [],
     name: 'obtenirStats',
     outputs: [
-      { internalType: 'string', name: 'nom', type: 'string' },
       { internalType: 'uint256', name: 'victoires', type: 'uint256' },
       { internalType: 'uint256', name: 'defaites', type: 'uint256' },
       { internalType: 'uint256', name: 'egalites', type: 'uint256' },
@@ -32,18 +26,28 @@ export const CONTRACT_ABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'joueurs',
-    outputs: [
-      { internalType: 'string', name: 'nom', type: 'string' },
-      { internalType: 'uint256', name: 'victoires', type: 'uint256' },
-      { internalType: 'uint256', name: 'defaites', type: 'uint256' },
-      { internalType: 'uint256', name: 'egalites', type: 'uint256' },
-      { internalType: 'uint256', name: 'serieActuelle', type: 'uint256' },
-      { internalType: 'uint256', name: 'meilleureSerie', type: 'uint256' },
-      { internalType: 'bool', name: 'existe', type: 'bool' },
-    ],
+    inputs: [{ internalType: 'address', name: '_joueur', type: 'address' }],
+    name: 'joueurExiste',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
     stateMutability: 'view',
     type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'version',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'pure',
+    type: 'function',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: 'address', name: 'joueur', type: 'address' },
+      { indexed: false, internalType: 'uint256', name: 'choixJoueur', type: 'uint256' },
+      { indexed: false, internalType: 'uint256', name: 'choixOrdinateur', type: 'uint256' },
+      { indexed: false, internalType: 'string', name: 'resultat', type: 'string' },
+    ],
+    name: 'PartieJouee',
+    type: 'event',
   },
 ] as const;

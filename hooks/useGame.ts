@@ -39,43 +39,30 @@ export function useGame() {
   const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
   const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
 
-  // Check if player exists
-  const { data: playerData } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: 'joueurs',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: isConnected && !!address && mode === "onchain",
-    }
-  });
-
-  const playerExists = playerData && (playerData as any)[6] === true;
-
-  // Get on-chain stats
+  // Get on-chain stats (no profile check needed with new contract)
   const { data: onchainStats, refetch: refetchStats } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'obtenirStats',
     query: {
-      enabled: isConnected && !!address && playerExists && mode === "onchain",
+      enabled: isConnected && !!address && mode === "onchain",
     }
   });
 
   // Update stats from on-chain data
   useEffect(() => {
-    if (mode === "onchain" && onchainStats && playerExists) {
+    if (mode === "onchain" && onchainStats) {
       // Convert readonly tuple to array for easier access
       const statsArray = Array.from(onchainStats);
       setStats({
-        wins: Number(statsArray[1] || 0),
-        losses: Number(statsArray[2] || 0),
-        ties: Number(statsArray[3] || 0),
-        currentStreak: Number(statsArray[6] || 0),
-        bestStreak: Number(statsArray[7] || 0),
+        wins: Number(statsArray[0] || 0),
+        losses: Number(statsArray[1] || 0),
+        ties: Number(statsArray[2] || 0),
+        currentStreak: Number(statsArray[5] || 0),
+        bestStreak: Number(statsArray[6] || 0),
       });
     }
-  }, [onchainStats, mode, playerExists]);
+  }, [onchainStats, mode]);
 
   // Handle transaction success
   useEffect(() => {
@@ -152,12 +139,6 @@ export function useGame() {
         return;
       }
 
-      if (!playerExists) {
-        setMessage("❌ Please create a profile first (coming soon)");
-        setStatus("idle");
-        return;
-      }
-
       setStatus("processing");
       setMessage("Sending transaction...");
       setPendingChoice(playerChoice);
@@ -183,7 +164,7 @@ export function useGame() {
         setLastResult(playResult);
         setMessage(`${messages[result]} (Confirming...)`);
 
-        // Call smart contract
+        // Call smart contract (profile created automatically if needed)
         writeContract({
           address: CONTRACT_ADDRESS,
           abi: CONTRACT_ABI,
@@ -198,7 +179,7 @@ export function useGame() {
         setPendingChoice(null);
       }
     },
-    [isConnected, playerExists, determineWinner, writeContract]
+    [isConnected, determineWinner, writeContract]
   );
 
   // Main play function
@@ -254,7 +235,6 @@ export function useGame() {
     lastResult,
     message,
     isConnected,
-    playerExists,
     isPending: isWritePending || (status === "processing" && pendingChoice !== null),
     play,
     startGame,
