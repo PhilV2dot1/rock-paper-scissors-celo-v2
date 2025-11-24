@@ -1,0 +1,17 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#FCFF52"/>
+
+  <!-- Icon circle -->
+  <circle cx="256" cy="200" r="80" fill="#1A1A1A" opacity="0.1"/>
+
+  <!-- Main Icon -->
+  <text x="256" y="240" font-size="100" text-anchor="middle" font-family="Arial, sans-serif">🎮</text>
+
+  <!-- Title -->
+  <text x="256" y="320" font-size="36" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif" fill="#1A1A1A">Rock Paper</text>
+  <text x="256" y="360" font-size="36" font-weight="900" text-anchor="middle" font-family="Arial, sans-serif" fill="#1A1A1A">Scissors</text>
+
+  <!-- Subtitle -->
+  <text x="256" y="400" font-size="18" font-weight="600" text-anchor="middle" font-family="Arial, sans-serif" fill="#374151">on Celo</text>
+</svg>

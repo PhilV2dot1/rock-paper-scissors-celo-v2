@@ -1,0 +1,15 @@
+{
+  "accountAssociation": {
+    "header": "miniapp",
+    "payload": "eyJkb21haW4iOiJ5b3VyLWFwcC1kb21haW4uY29tIn0",
+    "signature": "MHg..."
+  },
+  "frame": {
+    "version": "1",
+    "name": "Rock Paper Scissors on Celo",
+    "iconUrl": "https://your-app-domain.com/icon.png",
+    "splashImageUrl": "https://your-app-domain.com/splash.png",
+    "splashBackgroundColor": "#FCFF52",
+    "homeUrl": "https://your-app-domain.com"
+  }
+}
