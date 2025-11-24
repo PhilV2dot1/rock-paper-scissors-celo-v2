@@ -1,15 +1,20 @@
 {
-  "accountAssociation": {
-    "header": "miniapp",
-    "payload": "eyJkb21haW4iOiJ5b3VyLWFwcC1kb21haW4uY29tIn0",
-    "signature": "MHg..."
-  },
   "frame": {
-    "version": "1",
     "name": "Rock Paper Scissors on Celo",
-    "iconUrl": "https://your-app-domain.com/icon.png",
-    "splashImageUrl": "https://your-app-domain.com/splash.png",
-    "splashBackgroundColor": "#FCFF52",
-    "homeUrl": "https://your-app-domain.com"
+    "homeUrl": "https://rock-paper-scissors-celo-v2.vercel.app",
+    "iconUrl": "https://rock-paper-scissors-celo-v2.vercel.app/icon.png",
+    "version": "1",
+    "imageUrl": "https://rock-paper-scissors-celo-v2.vercel.app/og-image.png",
+    "subtitle": "Rock Paper Scissors on Celo",
+    "webhookUrl": "https://rock-paper-scissors-celo-v2.vercel.app/api/webhook",
+    "description": "Rock Paper Scissors free play or on-chain",
+    "splashImageUrl": "https://rock-paper-scissors-celo-v2.vercel.app/splash.png",
+    "primaryCategory": "games",
+    "splashBackgroundColor": "#FCFF52"
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjQ5MTM1MCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGYxOTM1NmFEQmZiMjcwZDc5MmIwZkExMjBlNzQ0RTQ3OTI2QTA2ZDAifQ",
+    "payload": "eyJkb21haW4iOiJyb2NrLXBhcGVyLXNjaXNzb3JzLWNlbG8tdjIudmVyY2VsLmFwcCJ9",
+    "signature": "30OXhhmoHOpKTbVOHTndxTl7AAyUeJgYaWN9/Qz3jJ9cPXdbAQEaoAWQ4af+ycJsJNMBpdCAGEDrHkYxRKuDLRw="
   }
 }

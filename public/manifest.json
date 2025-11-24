@@ -1,0 +1,16 @@
+{
+  "name": "Rock Paper Scissors on Celo",
+  "short_name": "RPS Celo",
+  "description": "Rock Paper Scissors free play or on-chain",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FCFF52",
+  "theme_color": "#FCFF52",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Rock Paper Scissors on Celo",
   description:
     "Play Rock Paper Scissors on-chain! Free mode or compete on the blockchain.",
+  manifest: "/manifest.json",
   openGraph: {
     title: "Rock Paper Scissors on Celo",
     description: "Play Rock Paper Scissors on-chain! Free or On-Chain mode.",
