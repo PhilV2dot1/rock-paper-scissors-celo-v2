@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent, usePublicClient } from "wagmi";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/lib/contract-abi";
 
 export type GameMode = "free" | "onchain";
@@ -34,21 +34,26 @@ export function useGame() {
   const [lastResult, setLastResult] = useState<PlayResult | null>(null);
   const [message, setMessage] = useState<string>("");
   const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
+  const [isTransactionInProgress, setIsTransactionInProgress] = useState(false);
 
   // Wagmi hooks
   const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
   const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
+  const publicClient = usePublicClient();
 
   // Get on-chain stats (no profile check needed with new contract)
-  const { data: onchainStats, refetch: refetchStats, queryKey } = useReadContract({
+  const { data: onchainStats, refetch: refetchStats } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'obtenirStats',
+    account: address, // Explicitly set account for read simulation
     // No args - obtenirStats uses msg.sender automatically
     query: {
       enabled: isConnected && !!address && mode === "onchain",
       gcTime: 0, // Don't cache
       staleTime: 0, // Always consider stale
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
     }
   });
 
@@ -68,103 +73,86 @@ export function useGame() {
     }
   }, [onchainStats, mode]);
 
-  // Handle transaction success
-  useEffect(() => {
-    if (isTxSuccess && pendingChoice !== null) {
-      const processResult = async () => {
-        // Save current stats before refetching
-        const oldStats = { ...stats };
+  // Listen to blockchain events for real-time game results
+  useWatchContractEvent({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    eventName: 'PartieJouee',
+    onLogs(logs) {
+      // Only process events for the current user
+      const userLog = logs.find(log =>
+        log.args.joueur?.toLowerCase() === address?.toLowerCase()
+      );
 
-        // Wait a moment for blockchain to update
-        await new Promise(resolve => setTimeout(resolve, 500));
+      if (userLog && pendingChoice !== null) {
+        console.log("🎮 PartieJouee event received:", userLog.args);
 
-        let attempts = 0;
-        let newStats = null;
-        const maxAttempts = 3;
+        const { choixJoueur, choixOrdinateur, resultat } = userLog.args;
 
-        // Try to refetch up to 3 times with shorter delays
-        while (attempts < maxAttempts) {
-          const { data } = await refetchStats();
-          if (data) {
-            const statsArray = Array.from(data);
-            const currentWins = Number(statsArray[0] || 0);
-            const currentLosses = Number(statsArray[1] || 0);
-            const currentTies = Number(statsArray[2] || 0);
+        // Convert smart contract result string to our GameResult type
+        let result: GameResult = "tie";
+        const resultStr = (resultat as string)?.toLowerCase() || "";
 
-            // Check if stats have changed
-            if (
-              currentWins !== oldStats.wins ||
-              currentLosses !== oldStats.losses ||
-              currentTies !== oldStats.ties
-            ) {
-              newStats = data;
-              break;
-            }
-          }
-
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-
-        if (newStats && pendingChoice !== null) {
-          const statsArray = Array.from(newStats);
-          const newWins = Number(statsArray[0] || 0);
-          const newLosses = Number(statsArray[1] || 0);
-          const newTies = Number(statsArray[2] || 0);
-
-          // Determine result by comparing with OLD stats (not current state)
-          let result: GameResult = "tie";
-          if (newWins > oldStats.wins) {
-            result = "win";
-          } else if (newLosses > oldStats.losses) {
-            result = "lose";
-          } else if (newTies > oldStats.ties) {
-            result = "tie";
-          }
-
-          const messages = {
-            win: "🎉 You Win!",
-            lose: "😞 You Lose",
-            tie: "🤝 It's a Tie!",
-          };
-
-          // We don't know computer's choice from on-chain, so use placeholder
-          const playResult: PlayResult = {
-            playerChoice: pendingChoice,
-            computerChoice: 0 as Choice, // Will be determined by result
-            result,
-            message: `${CHOICES[pendingChoice]} • ${messages[result]}`,
-          };
-
-          setLastResult(playResult);
-          setMessage(messages[result]);
+        if (resultStr.includes("victoire") || resultStr.includes("win")) {
+          result = "win";
+        } else if (resultStr.includes("defaite") || resultStr.includes("défaite") || resultStr.includes("lose") || resultStr.includes("loss")) {
+          result = "lose";
         } else {
-          // Fallback: Just refetch one more time and show the stats we have
-          console.warn("Stats didn't update after retries, using blockchain state");
-          const { data } = await refetchStats();
-          if (data) {
-            // Just show a generic success message
-            const playResult: PlayResult = {
-              playerChoice: pendingChoice,
-              computerChoice: 0 as Choice,
-              result: "tie",
-              message: `${CHOICES[pendingChoice]} • ✅ Played!`,
-            };
-            setLastResult(playResult);
-            setMessage("✅ Transaction confirmed");
-          } else {
-            setMessage("⚠️ Transaction confirmed, refresh to see result");
-          }
+          result = "tie";
         }
+
+        const messages = {
+          win: "🎉 You Win!",
+          lose: "😞 You Lose",
+          tie: "🤝 It's a Tie!",
+        };
+
+        // Now we have EXACT data from blockchain event!
+        const playerChoice = Number(choixJoueur) as Choice;
+        const computerChoice = Number(choixOrdinateur) as Choice;
+
+        const playResult: PlayResult = {
+          playerChoice,
+          computerChoice,
+          result,
+          message: `${CHOICES[playerChoice]} vs ${CHOICES[computerChoice]} • ${messages[result]}`,
+        };
+
+        setLastResult(playResult);
+        setMessage(messages[result]);
+
+        // Refetch stats once to update the UI
+        refetchStats();
 
         setStatus("finished");
         setPendingChoice(null);
-      };
-      processResult();
+        setIsTransactionInProgress(false);
+
+        console.log("✅ Game result processed from event");
+      }
+    },
+    // Only listen when we're waiting for a result in on-chain mode
+    enabled: isConnected && !!address && mode === "onchain" && pendingChoice !== null,
+  });
+
+  // Fallback: Reset transaction flag if tx completes but no event received
+  useEffect(() => {
+    if (isTxSuccess && pendingChoice !== null) {
+      // Set a timeout to reset if event doesn't arrive within 10 seconds
+      const timeoutId = setTimeout(() => {
+        if (pendingChoice !== null && status === "processing") {
+          console.warn("⚠️ Transaction confirmed but event not received, falling back");
+          setMessage("✅ Transaction confirmed - please refresh to see result");
+          setStatus("finished");
+          setPendingChoice(null);
+          setIsTransactionInProgress(false);
+          refetchStats();
+        }
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [isTxSuccess, pendingChoice, refetchStats]);
+  }, [isTxSuccess, pendingChoice, status, refetchStats]);
 
   // Determine the winner
   const determineWinner = useCallback((player: Choice, computer: Choice): GameResult => {
@@ -228,6 +216,13 @@ export function useGame() {
         return;
       }
 
+      // Prevent double transactions
+      if (isTransactionInProgress) {
+        setMessage("⏳ Please wait for current transaction to complete");
+        return;
+      }
+
+      setIsTransactionInProgress(true);
       setStatus("processing");
       setMessage("⏳ Sending transaction...");
       setPendingChoice(playerChoice);
@@ -244,7 +239,7 @@ export function useGame() {
           args: [BigInt(playerChoice)],
         });
 
-        // Message will be updated when transaction confirms
+        // Message will be updated when event is received
         setMessage("⏳ Waiting for confirmation...");
 
       } catch (error) {
@@ -252,9 +247,10 @@ export function useGame() {
         setStatus("idle");
         setMessage("❌ Transaction failed");
         setPendingChoice(null);
+        setIsTransactionInProgress(false);
       }
     },
-    [isConnected, writeContract]
+    [isConnected, writeContract, isTransactionInProgress]
   );
 
   // Main play function

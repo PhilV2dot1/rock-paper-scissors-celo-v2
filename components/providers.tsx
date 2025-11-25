@@ -11,6 +11,10 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
+      // Optimize for blockchain reads
+      networkMode: 'online',
+      gcTime: 0, // Don't cache blockchain reads globally
+      staleTime: 0, // Always consider blockchain data stale
     },
   },
 });

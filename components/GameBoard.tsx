@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { Choice } from "@/hooks/useGame";
+import { useFarcaster } from "./providers";
 
 interface GameBoardProps {
   onChoice: (choice: Choice) => void;
@@ -15,10 +16,15 @@ const CHOICES = [
 ];
 
 export function GameBoard({ onChoice, disabled }: GameBoardProps) {
+  const { isInFarcaster } = useFarcaster();
+
   // Check for reduced motion preference
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Disable animations in Farcaster for better performance
+  const shouldAnimate = !isInFarcaster && !prefersReducedMotion;
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -31,7 +37,7 @@ export function GameBoard({ onChoice, disabled }: GameBoardProps) {
             key={choice.index}
             onClick={() => onChoice(choice.index)}
             disabled={disabled}
-            whileTap={!disabled && !prefersReducedMotion ? { scale: 0.95 } : {}}
+            whileTap={!disabled && shouldAnimate ? { scale: 0.95 } : {}}
             className="flex flex-col items-center justify-center gap-1 sm:gap-2 p-4 sm:p-6 min-h-[100px] sm:min-h-[120px] bg-white/80 backdrop-blur-lg rounded-2xl border-2 border-gray-700 shadow-lg active:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:bg-white/90"
             style={{
               boxShadow: !disabled
