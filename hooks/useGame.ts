@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent, usePublicClient } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
+import { parseEventLogs } from "viem";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/lib/contract-abi";
 
 export type GameMode = "free" | "onchain";
@@ -38,7 +39,7 @@ export function useGame() {
 
   // Wagmi hooks
   const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
-  const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
+  const { data: receipt, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
   const publicClient = usePublicClient();
 
   // Get on-chain stats (no profile check needed with new contract)
@@ -73,86 +74,105 @@ export function useGame() {
     }
   }, [onchainStats, mode]);
 
-  // Listen to blockchain events for real-time game results
-  useWatchContractEvent({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    eventName: 'PartieJouee',
-    onLogs(logs) {
-      // Only process events for the current user
-      const userLog = logs.find(log =>
-        log.args.joueur?.toLowerCase() === address?.toLowerCase()
-      );
-
-      if (userLog && pendingChoice !== null) {
-        console.log("🎮 PartieJouee event received:", userLog.args);
-
-        const { choixJoueur, choixOrdinateur, resultat } = userLog.args;
-
-        // Convert smart contract result string to our GameResult type
-        let result: GameResult = "tie";
-        const resultStr = (resultat as string)?.toLowerCase() || "";
-
-        if (resultStr.includes("victoire") || resultStr.includes("win")) {
-          result = "win";
-        } else if (resultStr.includes("defaite") || resultStr.includes("défaite") || resultStr.includes("lose") || resultStr.includes("loss")) {
-          result = "lose";
-        } else {
-          result = "tie";
-        }
-
-        const messages = {
-          win: "🎉 You Win!",
-          lose: "😞 You Lose",
-          tie: "🤝 It's a Tie!",
-        };
-
-        // Now we have EXACT data from blockchain event!
-        const playerChoice = Number(choixJoueur) as Choice;
-        const computerChoice = Number(choixOrdinateur) as Choice;
-
-        const playResult: PlayResult = {
-          playerChoice,
-          computerChoice,
-          result,
-          message: `${CHOICES[playerChoice]} vs ${CHOICES[computerChoice]} • ${messages[result]}`,
-        };
-
-        setLastResult(playResult);
-        setMessage(messages[result]);
-
-        // Refetch stats once to update the UI
-        refetchStats();
-
-        setStatus("finished");
-        setPendingChoice(null);
-        setIsTransactionInProgress(false);
-
-        console.log("✅ Game result processed from event");
-      }
-    },
-    // Only listen when we're waiting for a result in on-chain mode
-    enabled: isConnected && !!address && mode === "onchain" && pendingChoice !== null,
-  });
-
-  // Fallback: Reset transaction flag if tx completes but no event received
+  // Parse transaction receipt logs for INSTANT results (no polling delay!)
   useEffect(() => {
-    if (isTxSuccess && pendingChoice !== null) {
-      // Set a timeout to reset if event doesn't arrive within 10 seconds
-      const timeoutId = setTimeout(() => {
-        if (pendingChoice !== null && status === "processing") {
-          console.warn("⚠️ Transaction confirmed but event not received, falling back");
-          setMessage("✅ Transaction confirmed - please refresh to see result");
+    if (receipt && pendingChoice !== null && address) {
+      try {
+        console.log("📝 Parsing transaction receipt logs...", receipt);
+
+        // Parse PartieJouee events from transaction receipt
+        const events = parseEventLogs({
+          abi: CONTRACT_ABI,
+          eventName: ['PartieJouee'],
+          logs: receipt.logs,
+        });
+
+        console.log("🔍 Parsed events:", events);
+
+        // Find event for current user
+        const userEvent = events.find((event: any) =>
+          event.args.joueur?.toLowerCase() === address.toLowerCase()
+        );
+
+        if (userEvent) {
+          console.log("🎮 PartieJouee event found in receipt:", userEvent.args);
+
+          const { choixJoueur, choixOrdinateur, resultat } = userEvent.args;
+
+          // Convert smart contract result string to our GameResult type
+          let result: GameResult = "tie";
+          const resultStr = (resultat as string)?.toLowerCase() || "";
+
+          if (resultStr.includes("victoire") || resultStr.includes("win")) {
+            result = "win";
+          } else if (resultStr.includes("defaite") || resultStr.includes("défaite") || resultStr.includes("lose") || resultStr.includes("loss")) {
+            result = "lose";
+          } else {
+            result = "tie";
+          }
+
+          const messages = {
+            win: "🎉 You Win!",
+            lose: "😞 You Lose",
+            tie: "🤝 It's a Tie!",
+          };
+
+          // Now we have EXACT data from blockchain receipt - INSTANT!
+          const playerChoice = Number(choixJoueur) as Choice;
+          const computerChoice = Number(choixOrdinateur) as Choice;
+
+          const playResult: PlayResult = {
+            playerChoice,
+            computerChoice,
+            result,
+            message: `${CHOICES[playerChoice]} vs ${CHOICES[computerChoice]} • ${messages[result]}`,
+          };
+
+          setLastResult(playResult);
+          setMessage(messages[result]);
+
+          // Update stats OPTIMISTICALLY (instant update, no refetch needed)
+          setStats(prev => ({
+            wins: result === "win" ? prev.wins + 1 : prev.wins,
+            losses: result === "lose" ? prev.losses + 1 : prev.losses,
+            ties: result === "tie" ? prev.ties + 1 : prev.ties,
+            currentStreak: result === "win" ? (prev.currentStreak || 0) + 1 : 0,
+            bestStreak:
+              result === "win" && (prev.currentStreak || 0) + 1 > (prev.bestStreak || 0)
+                ? (prev.currentStreak || 0) + 1
+                : prev.bestStreak || 0,
+          }));
+
+          // Optional: Refetch in background to verify (2 seconds later)
+          setTimeout(() => {
+            console.log("🔄 Background stats verification refetch");
+            refetchStats();
+          }, 2000);
+
+          setStatus("finished");
+          setPendingChoice(null);
+          setIsTransactionInProgress(false);
+
+          console.log("✅ Game result processed INSTANTLY from receipt!");
+        } else {
+          console.warn("⚠️ No PartieJouee event found in receipt for user");
+          // Fallback: just refetch stats
+          setMessage("✅ Transaction confirmed");
           setStatus("finished");
           setPendingChoice(null);
           setIsTransactionInProgress(false);
           refetchStats();
         }
-      }, 10000); // 10 second timeout
-
-      return () => clearTimeout(timeoutId);
+      } catch (error) {
+        console.error("❌ Error parsing receipt logs:", error);
+        setMessage("✅ Transaction confirmed - refresh to see result");
+        setStatus("finished");
+        setPendingChoice(null);
+        setIsTransactionInProgress(false);
+        refetchStats();
+      }
     }
-  }, [isTxSuccess, pendingChoice, status, refetchStats]);
+  }, [receipt, pendingChoice, address, refetchStats]);
 
   // Determine the winner
   const determineWinner = useCallback((player: Choice, computer: Choice): GameResult => {
