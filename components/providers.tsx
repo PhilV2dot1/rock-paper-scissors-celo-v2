@@ -44,15 +44,16 @@ export function Providers({ children }: { children: ReactNode }) {
 
       setIsInFarcaster(inFC);
 
-      if (inFC) {
-        try {
-          const success = await initializeFarcaster();
-          if (!success) {
-            console.warn("Farcaster SDK initialization returned false");
-            setInitError("SDK initialization failed");
-          }
-        } catch (error) {
-          console.error("SDK initialization error:", error);
+      // ALWAYS initialize Farcaster SDK (it calls ready() to dismiss splash)
+      try {
+        const success = await initializeFarcaster();
+        if (!success && inFC) {
+          console.warn("Farcaster SDK initialization returned false");
+          setInitError("SDK initialization failed");
+        }
+      } catch (error) {
+        console.error("SDK initialization error:", error);
+        if (inFC) {
           setInitError(error instanceof Error ? error.message : "Unknown error");
         }
       }

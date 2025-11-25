@@ -69,8 +69,40 @@ export function useGame() {
   useEffect(() => {
     if (isTxSuccess && pendingChoice !== null) {
       const processResult = async () => {
-        // Refetch stats to get updated values
-        const { data: newStats } = await refetchStats();
+        // Save current stats before refetching
+        const oldStats = { ...stats };
+
+        // Wait a bit for blockchain to update, then refetch multiple times
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        let attempts = 0;
+        let newStats = null;
+
+        // Try to refetch up to 5 times with delays
+        while (attempts < 5) {
+          const { data } = await refetchStats();
+          if (data) {
+            const statsArray = Array.from(data);
+            const currentWins = Number(statsArray[0] || 0);
+            const currentLosses = Number(statsArray[1] || 0);
+            const currentTies = Number(statsArray[2] || 0);
+
+            // Check if stats have changed
+            if (
+              currentWins !== oldStats.wins ||
+              currentLosses !== oldStats.losses ||
+              currentTies !== oldStats.ties
+            ) {
+              newStats = data;
+              break;
+            }
+          }
+
+          attempts++;
+          if (attempts < 5) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
 
         if (newStats && pendingChoice !== null) {
           const statsArray = Array.from(newStats);
@@ -78,13 +110,13 @@ export function useGame() {
           const newLosses = Number(statsArray[1] || 0);
           const newTies = Number(statsArray[2] || 0);
 
-          // Determine result by comparing with previous stats
+          // Determine result by comparing with OLD stats (not current state)
           let result: GameResult = "tie";
-          if (newWins > stats.wins) {
+          if (newWins > oldStats.wins) {
             result = "win";
-          } else if (newLosses > stats.losses) {
+          } else if (newLosses > oldStats.losses) {
             result = "lose";
-          } else if (newTies > stats.ties) {
+          } else if (newTies > oldStats.ties) {
             result = "tie";
           }
 
@@ -104,6 +136,9 @@ export function useGame() {
 
           setLastResult(playResult);
           setMessage(messages[result]);
+        } else {
+          // Fallback if stats didn't update after retries
+          setMessage("⚠️ Transaction confirmed but result unclear");
         }
 
         setStatus("finished");
@@ -111,7 +146,7 @@ export function useGame() {
       };
       processResult();
     }
-  }, [isTxSuccess, pendingChoice, refetchStats, stats]);
+  }, [isTxSuccess, pendingChoice, refetchStats]);
 
   // Determine the winner
   const determineWinner = useCallback((player: Choice, computer: Choice): GameResult => {
