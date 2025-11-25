@@ -40,12 +40,15 @@ export function useGame() {
   const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({ hash });
 
   // Get on-chain stats (no profile check needed with new contract)
-  const { data: onchainStats, refetch: refetchStats } = useReadContract({
+  const { data: onchainStats, refetch: refetchStats, queryKey } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'obtenirStats',
+    // No args - obtenirStats uses msg.sender automatically
     query: {
       enabled: isConnected && !!address && mode === "onchain",
+      gcTime: 0, // Don't cache
+      staleTime: 0, // Always consider stale
     }
   });
 
@@ -72,14 +75,15 @@ export function useGame() {
         // Save current stats before refetching
         const oldStats = { ...stats };
 
-        // Wait a bit for blockchain to update, then refetch multiple times
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait a moment for blockchain to update
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         let attempts = 0;
         let newStats = null;
+        const maxAttempts = 3;
 
-        // Try to refetch up to 5 times with delays
-        while (attempts < 5) {
+        // Try to refetch up to 3 times with shorter delays
+        while (attempts < maxAttempts) {
           const { data } = await refetchStats();
           if (data) {
             const statsArray = Array.from(data);
@@ -99,8 +103,8 @@ export function useGame() {
           }
 
           attempts++;
-          if (attempts < 5) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
 
@@ -137,8 +141,22 @@ export function useGame() {
           setLastResult(playResult);
           setMessage(messages[result]);
         } else {
-          // Fallback if stats didn't update after retries
-          setMessage("⚠️ Transaction confirmed but result unclear");
+          // Fallback: Just refetch one more time and show the stats we have
+          console.warn("Stats didn't update after retries, using blockchain state");
+          const { data } = await refetchStats();
+          if (data) {
+            // Just show a generic success message
+            const playResult: PlayResult = {
+              playerChoice: pendingChoice,
+              computerChoice: 0 as Choice,
+              result: "tie",
+              message: `${CHOICES[pendingChoice]} • ✅ Played!`,
+            };
+            setLastResult(playResult);
+            setMessage("✅ Transaction confirmed");
+          } else {
+            setMessage("⚠️ Transaction confirmed, refresh to see result");
+          }
         }
 
         setStatus("finished");
