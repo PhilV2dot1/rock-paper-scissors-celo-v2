@@ -14,17 +14,26 @@ export function isFarcasterContext(): boolean {
 
 export async function initializeFarcaster(): Promise<boolean> {
   try {
-    // Only initialize if in Farcaster context
+    // ALWAYS call ready() to dismiss splash screen, even if not in Farcaster
+    await sdk.actions.ready();
+    console.log("Farcaster SDK ready() called successfully");
+
+    // Check if we're actually in Farcaster context
     if (!isFarcasterContext()) {
-      console.log("Not in Farcaster context, skipping SDK initialization");
+      console.log("Not in Farcaster context, SDK ready but features disabled");
       return false;
     }
 
-    await sdk.actions.ready();
     console.log("Farcaster SDK initialized successfully");
     return true;
   } catch (error) {
     console.error("Failed to initialize Farcaster SDK:", error);
+    // Still try to call ready() even on error to dismiss splash
+    try {
+      await sdk.actions.ready();
+    } catch (readyError) {
+      console.error("Failed to call ready():", readyError);
+    }
     return false;
   }
 }

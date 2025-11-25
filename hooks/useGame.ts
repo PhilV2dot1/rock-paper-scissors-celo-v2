@@ -54,13 +54,14 @@ export function useGame() {
     if (mode === "onchain" && onchainStats) {
       // Convert readonly tuple to array for easier access
       const statsArray = Array.from(onchainStats);
-      setStats({
+      const newStats = {
         wins: Number(statsArray[0] || 0),
         losses: Number(statsArray[1] || 0),
         ties: Number(statsArray[2] || 0),
         currentStreak: Number(statsArray[5] || 0),
         bestStreak: Number(statsArray[6] || 0),
-      });
+      };
+      setStats(newStats);
     }
   }, [onchainStats, mode]);
 
@@ -68,14 +69,49 @@ export function useGame() {
   useEffect(() => {
     if (isTxSuccess && pendingChoice !== null) {
       const processResult = async () => {
-        await refetchStats();
+        // Refetch stats to get updated values
+        const { data: newStats } = await refetchStats();
+
+        if (newStats && pendingChoice !== null) {
+          const statsArray = Array.from(newStats);
+          const newWins = Number(statsArray[0] || 0);
+          const newLosses = Number(statsArray[1] || 0);
+          const newTies = Number(statsArray[2] || 0);
+
+          // Determine result by comparing with previous stats
+          let result: GameResult = "tie";
+          if (newWins > stats.wins) {
+            result = "win";
+          } else if (newLosses > stats.losses) {
+            result = "lose";
+          } else if (newTies > stats.ties) {
+            result = "tie";
+          }
+
+          const messages = {
+            win: "🎉 You Win!",
+            lose: "😞 You Lose",
+            tie: "🤝 It's a Tie!",
+          };
+
+          // We don't know computer's choice from on-chain, so use placeholder
+          const playResult: PlayResult = {
+            playerChoice: pendingChoice,
+            computerChoice: 0 as Choice, // Will be determined by result
+            result,
+            message: `${CHOICES[pendingChoice]} • ${messages[result]}`,
+          };
+
+          setLastResult(playResult);
+          setMessage(messages[result]);
+        }
+
         setStatus("finished");
-        setMessage("✅ Transaction confirmed!");
         setPendingChoice(null);
       };
       processResult();
     }
-  }, [isTxSuccess, pendingChoice, refetchStats]);
+  }, [isTxSuccess, pendingChoice, refetchStats, stats]);
 
   // Determine the winner
   const determineWinner = useCallback((player: Choice, computer: Choice): GameResult => {
@@ -140,30 +176,13 @@ export function useGame() {
       }
 
       setStatus("processing");
-      setMessage("Sending transaction...");
+      setMessage("⏳ Sending transaction...");
       setPendingChoice(playerChoice);
 
+      // Clear previous result while waiting
+      setLastResult(null);
+
       try {
-        // Generate computer choice locally for display
-        const computerChoice = Math.floor(Math.random() * 3) as Choice;
-        const result = determineWinner(playerChoice, computerChoice);
-
-        const messages = {
-          win: "🎉 You Win!",
-          lose: "😞 You Lose",
-          tie: "🤝 It's a Tie!",
-        };
-
-        const playResult: PlayResult = {
-          playerChoice,
-          computerChoice,
-          result,
-          message: `${CHOICES[playerChoice]} vs ${CHOICES[computerChoice]} • ${messages[result]}`,
-        };
-
-        setLastResult(playResult);
-        setMessage(`${messages[result]} (Confirming...)`);
-
         // Call smart contract (profile created automatically if needed)
         writeContract({
           address: CONTRACT_ADDRESS,
@@ -172,6 +191,9 @@ export function useGame() {
           args: [BigInt(playerChoice)],
         });
 
+        // Message will be updated when transaction confirms
+        setMessage("⏳ Waiting for confirmation...");
+
       } catch (error) {
         console.error("Transaction error:", error);
         setStatus("idle");
@@ -179,7 +201,7 @@ export function useGame() {
         setPendingChoice(null);
       }
     },
-    [isConnected, determineWinner, writeContract]
+    [isConnected, writeContract]
   );
 
   // Main play function
