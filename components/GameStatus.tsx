@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { PlayResult } from "@/hooks/useGame";
 
@@ -10,7 +11,7 @@ interface GameStatusProps {
 
 const CHOICES_EMOJI = ["🪨", "📄", "✂️"];
 
-export function GameStatus({ result, message }: GameStatusProps) {
+export const GameStatus = memo(function GameStatus({ result, message }: GameStatusProps) {
   if (!result && !message) return null;
 
   return (
@@ -60,4 +61,4 @@ export function GameStatus({ result, message }: GameStatusProps) {
       </motion.div>
     </AnimatePresence>
   );
-}
+});

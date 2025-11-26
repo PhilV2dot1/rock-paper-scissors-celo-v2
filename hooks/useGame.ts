@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
 import { parseEventLogs } from "viem";
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/lib/contract-abi";
@@ -35,7 +35,10 @@ export function useGame() {
   const [lastResult, setLastResult] = useState<PlayResult | null>(null);
   const [message, setMessage] = useState<string>("");
   const [pendingChoice, setPendingChoice] = useState<Choice | null>(null);
-  const [isTransactionInProgress, setIsTransactionInProgress] = useState(false);
+
+  // Use refs instead of state for performance-critical flags
+  const isTransactionInProgressRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   // Wagmi hooks
   const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
@@ -70,7 +73,20 @@ export function useGame() {
         currentStreak: Number(statsArray[5] || 0),
         bestStreak: Number(statsArray[6] || 0),
       };
-      setStats(newStats);
+
+      // Only update if values actually changed to prevent unnecessary re-renders
+      setStats(prev => {
+        if (
+          prev.wins === newStats.wins &&
+          prev.losses === newStats.losses &&
+          prev.ties === newStats.ties &&
+          prev.currentStreak === newStats.currentStreak &&
+          prev.bestStreak === newStats.bestStreak
+        ) {
+          return prev; // Prevent re-render
+        }
+        return newStats;
+      });
     }
   }, [onchainStats, mode]);
 
@@ -144,14 +160,19 @@ export function useGame() {
           }));
 
           // Optional: Refetch in background to verify (2 seconds later)
-          setTimeout(() => {
+          // Clear any previous timeout
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+
+          timeoutRef.current = setTimeout(() => {
             console.log("🔄 Background stats verification refetch");
             refetchStats();
           }, 2000);
 
           setStatus("finished");
           setPendingChoice(null);
-          setIsTransactionInProgress(false);
+          isTransactionInProgressRef.current = false;
 
           console.log("✅ Game result processed INSTANTLY from receipt!");
         } else {
@@ -160,7 +181,7 @@ export function useGame() {
           setMessage("✅ Transaction confirmed");
           setStatus("finished");
           setPendingChoice(null);
-          setIsTransactionInProgress(false);
+          isTransactionInProgressRef.current = false;
           refetchStats();
         }
       } catch (error) {
@@ -168,11 +189,18 @@ export function useGame() {
         setMessage("✅ Transaction confirmed - refresh to see result");
         setStatus("finished");
         setPendingChoice(null);
-        setIsTransactionInProgress(false);
+        isTransactionInProgressRef.current = false;
         refetchStats();
       }
     }
-  }, [receipt, pendingChoice, address, refetchStats]);
+
+    // CLEANUP: Clear timeout on unmount or when dependencies change
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [receipt, pendingChoice, address]); // Removed refetchStats - wagmi guarantees it's stable
 
   // Determine the winner
   const determineWinner = useCallback((player: Choice, computer: Choice): GameResult => {
@@ -236,13 +264,13 @@ export function useGame() {
         return;
       }
 
-      // Prevent double transactions
-      if (isTransactionInProgress) {
+      // Prevent double transactions using ref (no re-render)
+      if (isTransactionInProgressRef.current) {
         setMessage("⏳ Please wait for current transaction to complete");
         return;
       }
 
-      setIsTransactionInProgress(true);
+      isTransactionInProgressRef.current = true;
       setStatus("processing");
       setMessage("⏳ Sending transaction...");
       setPendingChoice(playerChoice);
@@ -267,10 +295,10 @@ export function useGame() {
         setStatus("idle");
         setMessage("❌ Transaction failed");
         setPendingChoice(null);
-        setIsTransactionInProgress(false);
+        isTransactionInProgressRef.current = false;
       }
     },
-    [isConnected, writeContract, isTransactionInProgress]
+    [isConnected, writeContract] // Removed isTransactionInProgress - using ref instead
   );
 
   // Main play function

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import type { Choice } from "@/hooks/useGame";
 import { useFarcaster } from "./providers";
@@ -15,7 +16,7 @@ const CHOICES = [
   { emoji: "✂️", name: "Scissors", index: 2 as Choice },
 ];
 
-export function GameBoard({ onChoice, disabled }: GameBoardProps) {
+export const GameBoard = memo(function GameBoard({ onChoice, disabled }: GameBoardProps) {
   const { isInFarcaster } = useFarcaster();
 
   // Check for reduced motion preference
@@ -61,4 +62,4 @@ export function GameBoard({ onChoice, disabled }: GameBoardProps) {
       </div>
     </div>
   );
-}
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { GameStats } from "@/hooks/useGame";
 
@@ -8,9 +9,13 @@ interface PlayerStatsProps {
   onReset?: () => void;
 }
 
-export function PlayerStats({ stats, onReset }: PlayerStatsProps) {
-  const total = stats.wins + stats.losses + stats.ties;
-  const winRate = total > 0 ? Math.round((stats.wins / total) * 100) : 0;
+export const PlayerStats = memo(function PlayerStats({ stats, onReset }: PlayerStatsProps) {
+  // Memoize calculations to prevent unnecessary re-computation
+  const { total, winRate } = useMemo(() => {
+    const t = stats.wins + stats.losses + stats.ties;
+    const wr = t > 0 ? Math.round((stats.wins / t) * 100) : 0;
+    return { total: t, winRate: wr };
+  }, [stats.wins, stats.losses, stats.ties]);
 
   return (
     <motion.div
@@ -84,4 +89,4 @@ export function PlayerStats({ stats, onReset }: PlayerStatsProps) {
       )}
     </motion.div>
   );
-}
+});
